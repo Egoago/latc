@@ -1,0 +1,7 @@
+cam_params: 'data/camera_params.npz'
+cam_height: 9.9
+screen_size: [31, 17.3]
+screen_res: [1920, 1080]
+cam_res: [1280, 720]
+near: 1.
+far: 10000.

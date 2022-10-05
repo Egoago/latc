@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, List
 
 import numpy as np
 
@@ -27,14 +27,38 @@ class CameraParameters:
     dist_coef: Optional[np.ndarray] = None
 
     def save(self, path):
-        np.savez(path+'.npz', cam_mtx=self.cam_mtx, dist_coef=self.dist_coef)
+        np.savez(path, cam_mtx=self.cam_mtx, dist_coef=self.dist_coef)
 
     @staticmethod
     def load(path) -> 'CameraParameters':
-        data = np.load(path+'.npz')
+        data = np.load(path)
         cam_mtx = data['cam_mtx']
         dist_coef = data['dist_coef']
         return CameraParameters(cam_mtx=cam_mtx, dist_coef=dist_coef)
+
+
+@dataclass
+class Calibration:
+    camera: CameraParameters
+    cam_height: float
+    screen_size: np.ndarray
+    screen_res: np.ndarray
+    cam_res: np.ndarray
+    near: float
+    far: float
+
+    @staticmethod
+    def load_yaml(path):
+        with open(path, 'r') as stream:
+            import yaml
+            config = yaml.safe_load(stream)
+        return Calibration(camera=CameraParameters.load(config['cam_params']),
+                           cam_height=config['cam_height'],
+                           screen_size=np.array(config['screen_size'], dtype=float),
+                           screen_res=np.array(config['screen_res'], dtype=int),
+                           cam_res=np.array(config['cam_res'], dtype=int),
+                           near=config['near'],
+                           far=config['far'])
 
 
 def homogeneous(x, vector=False):

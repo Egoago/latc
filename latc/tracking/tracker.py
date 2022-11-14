@@ -1,16 +1,14 @@
-from typing import Optional
+from typing import Optional, List
 
 import numpy as np
-
 from latc import utils
-from latc.utils import Pose
 
 
 class Tracker:
     def __init__(self, cam_param: utils.CameraParameters):
         self.cam_param = cam_param
 
-    def update(self, img: np.ndarray) -> Optional[Pose]:
+    def update(self, img: np.ndarray) -> Optional[List[np.ndarray]]:
         raise NotImplementedError()
 
     def __enter__(self):

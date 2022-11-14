@@ -1,5 +1,5 @@
 import re
-from typing import Optional
+from typing import Optional, List
 
 import cv2
 import numpy as np
@@ -16,8 +16,8 @@ mp_face_mesh = mp.solutions.face_mesh
 
 
 class MediapipeTracker(Tracker):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, cam_param: utils.CameraParameters):
+        super().__init__(cam_param)
         self.tracker = mp_face_mesh.FaceMesh(
             static_image_mode=False,
             max_num_faces=2,
@@ -32,7 +32,7 @@ class MediapipeTracker(Tracker):
                                   ], axis=0)
         self.reference_vertices = canonical_face_vertices[self.reference_idxs]
 
-    def update(self, img: np.ndarray) -> Optional[Pose]:
+    def update(self, img: np.ndarray) -> Optional[List[np.ndarray]]:
         image_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         image_rgb.flags.writeable = False
         results = self.tracker.process(image_rgb)
@@ -46,8 +46,12 @@ class MediapipeTracker(Tracker):
                 R, t = cv2.Rodrigues(rotation_vector)[0], translation_vector[:, 0]
                 T_model2cam = np.diag([1, -1, -1, 1]) @ Pose(R, t).matrix()
                 eye_cam = utils.homogeneous_inv(T_model2cam @ utils.homogeneous(self.eye_model))
-                assert eye_cam[2] > 0
-                return eye_cam
+                assert eye_cam[2] < 0
+                projected_points, _ = cv2.projectPoints(self.reference_vertices,
+                                                        rotation_vector,
+                                                        translation_vector,
+                                                        self.cam_param.cam_mtx, self.cam_param.dist_coef)
+                return eye_cam, projected_points
         return None
 
     def close(self):

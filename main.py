@@ -106,7 +106,7 @@ if __name__ == "__main__":
     tracker = MediapipeTracker(config.camera)
     cap = cv2.VideoCapture(0)
     window_name = "Out"
-    cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
+    cv2.namedWindow(window_name, flags=cv2.WINDOW_GUI_NORMAL)
     fullscreen = True
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, config.cam_res[0])
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, config.cam_res[1])
@@ -119,7 +119,7 @@ if __name__ == "__main__":
                                   transform(box(), transform_matrix(s=cube_size,
                                                                     t=[0., 0., -config.screen_size[1]*4.5]))])
     T_cam2world = np.linalg.inv(np.array([[-1., 0., 0., 0.],  # TODO tilt
-                                          [0., 1., 0., config.cam_height],
+                                          [0., 1., 0., -config.cam_height],
                                           [0., 0., -1., 0.],
                                           [0., 0., 0., 1.]]))
     start = perf_counter()
@@ -140,6 +140,8 @@ if __name__ == "__main__":
             eye_depth = eye_world[2]
             eye_vcam = eye_world - np.array([0, 0, config.near], float)
             texts.append(f'eye_vcam:{eye_vcam}')
+
+
             points = test_points[:, :3]
             ratio = -points[:, 2] / eye_depth
             test_points_sheared = points + np.outer(ratio, eye_vcam)

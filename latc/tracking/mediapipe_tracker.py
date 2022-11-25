@@ -8,6 +8,7 @@ from protobuf_to_dict import protobuf_to_dict
 
 from latc import utils
 from latc.tracking.tracker import Tracker
+from latc.tracking.webcam import WebCam
 from latc.utils import Pose
 
 mp_drawing = mp.solutions.drawing_utils
@@ -16,8 +17,9 @@ mp_face_mesh = mp.solutions.face_mesh
 
 
 class MediapipeTracker(Tracker):
-    def __init__(self, cam_param: utils.CameraParameters):
+    def __init__(self, cam_param: utils.CameraParameters, camera: WebCam):
         super().__init__(cam_param)
+        self.camera = camera
         self.tracker = mp_face_mesh.FaceMesh(
             static_image_mode=False,
             max_num_faces=2,
@@ -32,7 +34,8 @@ class MediapipeTracker(Tracker):
                                   ], axis=0)
         self.reference_vertices = canonical_face_vertices[self.reference_idxs]
 
-    def update(self, img: np.ndarray) -> Optional[List[np.ndarray]]:
+    def update(self) -> Optional[List[np.ndarray]]:
+        img = self.camera.update()
         image_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         image_rgb.flags.writeable = False
         results = self.tracker.process(image_rgb)
@@ -55,7 +58,8 @@ class MediapipeTracker(Tracker):
         return None
 
     def close(self):
-        raise self.tracker.close()
+        self.camera.close()
+        self.tracker.close()
 
     @staticmethod
     def _load_canonical_vertices():

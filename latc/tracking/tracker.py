@@ -8,7 +8,7 @@ class Tracker:
     def __init__(self, cam_param: utils.CameraParameters):
         self.cam_param = cam_param
 
-    def update(self, img: np.ndarray) -> Optional[List[np.ndarray]]:
+    def update(self) -> Optional[List[np.ndarray]]:
         raise NotImplementedError()
 
     def __enter__(self):

@@ -1,9 +1,11 @@
 from dataclasses import dataclass
-from typing import Optional, List
+from typing import Optional
 
 import numpy as np
 
 
+def normalize(normals):
+    return normals / np.linalg.norm(normals, axis=1)[:, None]
 
 
 @dataclass
@@ -11,6 +13,7 @@ class Position:
     x: float = 0
     y: float = 0
     z: float = 0
+
 
 @dataclass
 class Pose:
@@ -38,12 +41,24 @@ class CameraParameters:
 
 
 @dataclass
+class Resolution:
+    height: int
+    width: int
+
+
+@dataclass
+class Size:
+    height: float
+    width: float
+
+
+@dataclass
 class Calibration:
     camera: CameraParameters
     cam_height: float
-    screen_size: np.ndarray
-    screen_res: np.ndarray
-    cam_res: np.ndarray
+    screen_size: Size
+    screen_res: Resolution
+    cam_res: Resolution
     near: float
     far: float
 
@@ -54,9 +69,12 @@ class Calibration:
             config = yaml.safe_load(stream)
         return Calibration(camera=CameraParameters.load(config['cam_params']),
                            cam_height=config['cam_height'],
-                           screen_size=np.array(config['screen_size'], dtype=float),
-                           screen_res=np.array(config['screen_res'], dtype=int),
-                           cam_res=np.array(config['cam_res'], dtype=int),
+                           screen_size=Size(width=config['screen_size']['width'],
+                                            height=config['screen_size']['height']),
+                           screen_res=Resolution(width=config['screen_res']['width'],
+                                                 height=config['screen_res']['height']),
+                           cam_res=Resolution(width=config['cam_res']['width'],
+                                              height=config['cam_res']['height']),
                            near=config['near'],
                            far=config['far'])
 

@@ -1,31 +1,31 @@
-from time import perf_counter
+from datetime import datetime
+
 import numpy as np
 
 import latc
 
+def create_tunnel(size):
+    depth = min(size.width, size.height)
+    return [latc.objects.Box(scale=[size.width, size.height, depth],
+                             translation=[0., 0., -depth * (0.5 + 2 * i)]) for i in range(4)]
 if __name__ == "__main__":
     config = latc.Calibration.load_yaml('data/config.yaml')
-    tracker = latc.MediapipeTracker(config.camera, latc.CVWebCam())
-
-    T_cam2world = np.linalg.inv(np.array([[-1., 0., 0., 0.],  # TODO tilt
-                                          [0., 1., 0., -config.cam_height],
-                                          [0., 0., -1., 0.],
-                                          [0., 0., 0., 1.]]))
-    start = perf_counter()
-    renderer = latc.Renderer([latc.LoadedObject('data/deer.obj',
-                                                scale=config.screen_size.height,
-                                                translation=[0., 0., -1.5 * config.screen_size.height])],
-                             config=config, debug=True)
+    tracker = latc.MediapipeTracker(config, latc.CVWebCam())
+    objects = [latc.objects.LoadedObject('data/deer.obj', config.screen_size.height, [0, 0, -1.5 * config.screen_size.height])]
+    objects += create_tunnel(config.screen_size)
+    renderer = latc.Renderer(objects, config)
     while True:
-        result = tracker.update()
+        eye_world = tracker.update()
+        print(eye_world)
+        # seconds = datetime.now().second
+        # eye_world = np.array([config.screen_size.width / 2,
+        #                       config.screen_size.height / 2,
+        #                       config.screen_size.height], dtype=float)
+        # if seconds//10 % 3 == 1:
+        #     eye_world[1] *= -1
+        # elif seconds // 10 % 3 == 2:
+        #     eye_world[0] *= -1
+        if eye_world is not None:
+            renderer.update_shear(eye_world=eye_world)
 
-        if result is not None:
-            eye_cam, feature_points = result
-            eye_world = latc.homogeneous_inv(T_cam2world @ latc.homogeneous(eye_cam))
-            eye_depth = eye_world[2]
-            eye_vcam = eye_world - np.array([0, 0, config.screen_size.height/2.], float)
-            renderer.shear_mtx = V = np.array([[1., 0., -eye_vcam[0]/eye_depth, 0.],
-                                               [0., 1., -eye_vcam[1]/eye_depth, 0.],
-                                               [0., 0., 1-eye_vcam[2]/eye_depth, 0.],
-                                               [0., 0., 0., 1.]], float)
         renderer.render()

@@ -1,5 +1,5 @@
 import re
-from typing import Optional, List
+from typing import Optional
 
 import cv2
 import numpy as np
@@ -17,8 +17,8 @@ mp_face_mesh = mp.solutions.face_mesh
 
 
 class MediapipeTracker(Tracker):
-    def __init__(self, cam_param: utils.CameraParameters, camera: WebCam):
-        super().__init__(cam_param)
+    def __init__(self, config: utils.Calibration, camera: WebCam):
+        super().__init__(config)
         self.camera = camera
         self.tracker = mp_face_mesh.FaceMesh(
             static_image_mode=False,
@@ -33,8 +33,12 @@ class MediapipeTracker(Tracker):
                                   canonical_face_vertices[374]
                                   ], axis=0)
         self.reference_vertices = canonical_face_vertices[self.reference_idxs]
+        self.T_cam2world = np.linalg.inv(np.array([[-1., 0., 0., 0.],  # TODO tilt
+                                                   [0., 1., 0., -config.cam_height],
+                                                   [0., 0., -1., 0.],
+                                                   [0., 0., 0., 1.]]))
 
-    def update(self) -> Optional[List[np.ndarray]]:
+    def update(self) -> Optional[np.ndarray]:
         img = self.camera.update()
         image_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         image_rgb.flags.writeable = False
@@ -43,18 +47,15 @@ class MediapipeTracker(Tracker):
             face_pixels = self._get_face_pixels(results.multi_face_landmarks[0], img.shape)[self.reference_idxs]
             success, rotation_vector, translation_vector = cv2.solvePnP(self.reference_vertices,
                                                                         face_pixels,
-                                                                        self.cam_param.cam_mtx,
-                                                                        self.cam_param.dist_coef, flags=0)
+                                                                        self.config.camera.cam_mtx,
+                                                                        self.config.camera.dist_coef, flags=0)
             if success:
                 R, t = cv2.Rodrigues(rotation_vector)[0], translation_vector[:, 0]
                 T_model2cam = np.diag([1, -1, -1, 1]) @ Pose(R, t).matrix()
                 eye_cam = utils.homogeneous_inv(T_model2cam @ utils.homogeneous(self.eye_model))
                 assert eye_cam[2] < 0
-                projected_points, _ = cv2.projectPoints(self.reference_vertices,
-                                                        rotation_vector,
-                                                        translation_vector,
-                                                        self.cam_param.cam_mtx, self.cam_param.dist_coef)
-                return eye_cam, projected_points
+                eye_world = utils.homogeneous_inv(self.T_cam2world @ utils.homogeneous(eye_cam))
+                return eye_world
         return None
 
     def close(self):

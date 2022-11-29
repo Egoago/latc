@@ -5,8 +5,8 @@ from latc import utils
 
 
 class Tracker:
-    def __init__(self, cam_param: utils.CameraParameters):
-        self.cam_param = cam_param
+    def __init__(self, config: utils.Calibration):
+        self.config = config
 
     def update(self) -> Optional[List[np.ndarray]]:
         raise NotImplementedError()

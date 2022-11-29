@@ -7,13 +7,23 @@ import latc
 def create_tunnel(size):
     depth = min(size.width, size.height)
     return [latc.objects.Box(scale=[size.width, size.height, depth],
-                             translation=[0., 0., -depth * (0.5 + 2 * i)]) for i in range(4)]
+                             translation=[0., 0., -depth * (0.5 + 2 * i)],
+                             wireframe=True) for i in range(4)]
+
+
 if __name__ == "__main__":
     config = latc.Calibration.load_yaml('data/config.yaml')
     tracker = latc.MediapipeTracker(config, latc.CVWebCam())
-    objects = [latc.objects.LoadedObject('data/deer.obj', config.screen_size.height, [0, 0, -1.5 * config.screen_size.height])]
-    objects += create_tunnel(config.screen_size)
-    renderer = latc.Renderer(objects, config)
+
+    renderer = latc.Renderer([], config)
+    renderer.objects += create_tunnel(config.screen_size)
+    renderer.objects += [latc.objects.LoadedObject('data/deer.obj', config.screen_size.height, [0, 0, -1.5 * config.screen_size.height])]
+    renderer.objects += [latc.objects.LoadedObject('data/deer.obj', config.screen_size.height, [-10, 0, 0])]
+    renderer.objects += [latc.objects.LoadedObject('data/deer.obj', config.screen_size.height, [-10, 0, -1 * config.screen_size.height])]
+    renderer.objects += [latc.objects.LoadedObject('data/deer.obj', config.screen_size.height, [-10, 0, -2 * config.screen_size.height])]
+    renderer.objects += [latc.objects.LoadedObject('data/deer.obj', config.screen_size.height, [-10, 0, -3 * config.screen_size.height])]
+    renderer.objects += [latc.objects.LoadedObject('data/deer.obj', config.screen_size.height, [-10, 0, -4 * config.screen_size.height])]
+    renderer.objects += [latc.objects.LoadedObject('data/deer.obj', config.screen_size.height, [-10, 0, -5 * config.screen_size.height])]
     while True:
         eye_world = tracker.update()
         print(eye_world)

@@ -5,7 +5,10 @@ import numpy as np
 
 
 def normalize(normals):
-    return normals / np.linalg.norm(normals, axis=1)[:, None]
+    if normals.ndim == 2:
+        return normals / np.linalg.norm(normals, axis=1)[:, None]
+    else:
+        return normals/np.linalg.norm(normals)
 
 
 @dataclass
